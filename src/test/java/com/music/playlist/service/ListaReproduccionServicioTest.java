@@ -138,15 +138,159 @@ class ListaReproduccionServicioTest {
     }
 
     @Test
-    @DisplayName("Debe lanzar IllegalArgumentException cuando el nombre es null o vacío")
-    void debeLanzarExcepcionCuandoNombreEsInvalido() {
+    @DisplayName("Debe crear una playlist exitosamente cuando la lista de canciones es null")
+    void debeCrearListaReproduccionExitosamente_conListaDeCancionesNull() {
+        SolicitudListaReproduccion solicitudSinCanciones = SolicitudListaReproduccion.builder()
+                .nombre("Acoustic Vibes")
+                .descripcion("Sesiones acústicas")
+                .canciones(null)
+                .build();
+
+        ListaReproduccion playlistGuardada = ListaReproduccion.builder()
+                .id(2L)
+                .nombre("Acoustic Vibes")
+                .descripcion("Sesiones acústicas")
+                .cancionesLista(new ArrayList<>())
+                .build();
+
+        RespuestaListaReproduccion respuestaSinCanciones = RespuestaListaReproduccion.builder()
+                .nombre("Acoustic Vibes")
+                .descripcion("Sesiones acústicas")
+                .canciones(List.of())
+                .build();
+
+        when(listaReproduccionRepository.existsByNombre("Acoustic Vibes")).thenReturn(false);
+        when(listaReproduccionRepository.save(any(ListaReproduccion.class))).thenReturn(playlistGuardada);
+        when(listaReproduccionMapper.aRespuesta(playlistGuardada)).thenReturn(respuestaSinCanciones);
+
+        RespuestaListaReproduccion resultado = listaReproduccionServicio.crearListaReproduccion(solicitudSinCanciones);
+
+        assertThat(resultado).isNotNull();
+        assertThat(resultado.getNombre()).isEqualTo("Acoustic Vibes");
+        assertThat(resultado.getCanciones()).isEmpty();
+        verify(cancionRepository, never()).save(any());
+        verify(listaReproduccionRepository).save(any(ListaReproduccion.class));
+    }
+
+    @Test
+    @DisplayName("Debe crear una playlist exitosamente cuando la lista de canciones está vacía")
+    void debeCrearListaReproduccionExitosamente_conListaDeCancionesVacia() {
+        SolicitudListaReproduccion solicitudVacia = SolicitudListaReproduccion.builder()
+                .nombre("Chillout")
+                .descripcion("Música relajante")
+                .canciones(new ArrayList<>())
+                .build();
+
+        ListaReproduccion playlistGuardada = ListaReproduccion.builder()
+                .id(3L)
+                .nombre("Chillout")
+                .descripcion("Música relajante")
+                .cancionesLista(new ArrayList<>())
+                .build();
+
+        RespuestaListaReproduccion respuesta = RespuestaListaReproduccion.builder()
+                .nombre("Chillout")
+                .descripcion("Música relajante")
+                .canciones(List.of())
+                .build();
+
+        when(listaReproduccionRepository.existsByNombre("Chillout")).thenReturn(false);
+        when(listaReproduccionRepository.save(any(ListaReproduccion.class))).thenReturn(playlistGuardada);
+        when(listaReproduccionMapper.aRespuesta(playlistGuardada)).thenReturn(respuesta);
+
+        RespuestaListaReproduccion resultado = listaReproduccionServicio.crearListaReproduccion(solicitudVacia);
+
+        assertThat(resultado).isNotNull();
+        assertThat(resultado.getNombre()).isEqualTo("Chillout");
+        assertThat(resultado.getCanciones()).isEmpty();
+        verify(cancionRepository, never()).save(any());
+        verify(listaReproduccionRepository).save(any(ListaReproduccion.class));
+    }
+
+    @Test
+    @DisplayName("Debe crear playlist asociando una canción existente y guardando otra nueva en la misma operación")
+    void debeCrearListaReproduccionExitosamente_conCancionesMixtasExistentesYNuevas() {
+        SolicitudCancion cancionExistenteSol = SolicitudCancion.builder()
+                .titulo("Bohemian Rhapsody")
+                .artista("Queen")
+                .build();
+
+        SolicitudCancion cancionNuevaSol = SolicitudCancion.builder()
+                .titulo("Don't Stop Me Now")
+                .artista("Queen")
+                .album("Jazz")
+                .anno("1978")
+                .genero("Rock")
+                .build();
+
+        Cancion cancionNuevaEntidad = Cancion.builder()
+                .id(11L)
+                .titulo("Don't Stop Me Now")
+                .artista("Queen")
+                .album("Jazz")
+                .anno("1978")
+                .genero("Rock")
+                .build();
+
+        SolicitudListaReproduccion solicitudMixta = SolicitudListaReproduccion.builder()
+                .nombre("Queen Best")
+                .descripcion("Lo mejor de Queen")
+                .canciones(List.of(cancionExistenteSol, cancionNuevaSol))
+                .build();
+
+        when(listaReproduccionRepository.existsByNombre("Queen Best")).thenReturn(false);
+        when(cancionRepository.findByTituloAndArtista("Bohemian Rhapsody", "Queen")).thenReturn(Optional.of(cancionEjemplo));
+        when(cancionRepository.findByTituloAndArtista("Don't Stop Me Now", "Queen")).thenReturn(Optional.empty());
+        when(cancionMapper.aEntidad(cancionNuevaSol)).thenReturn(cancionNuevaEntidad);
+        when(cancionRepository.save(cancionNuevaEntidad)).thenReturn(cancionNuevaEntidad);
+        when(listaReproduccionRepository.save(any(ListaReproduccion.class))).thenReturn(listaEjemplo);
+        when(listaReproduccionMapper.aRespuesta(listaEjemplo)).thenReturn(respuestaEjemplo);
+
+        RespuestaListaReproduccion resultado = listaReproduccionServicio.crearListaReproduccion(solicitudMixta);
+
+        assertThat(resultado).isNotNull();
+        verify(cancionRepository).save(cancionNuevaEntidad);
+        verify(cancionRepository, never()).save(cancionEjemplo);
+        verify(listaReproduccionRepository).save(any(ListaReproduccion.class));
+    }
+
+    @Test
+    @DisplayName("Debe lanzar IllegalArgumentException cuando el nombre es null")
+    void debeLanzarExcepcionCuandoNombreEsNull() {
+        SolicitudListaReproduccion solicitudInvalida = SolicitudListaReproduccion.builder()
+                .nombre(null)
+                .descripcion("Desc")
+                .build();
+
+        assertThatThrownBy(() -> listaReproduccionServicio.crearListaReproduccion(solicitudInvalida))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("no puede ser null");
+    }
+
+    @Test
+    @DisplayName("Debe lanzar IllegalArgumentException cuando el nombre es cadena vacía")
+    void debeLanzarExcepcionCuandoNombreEsCadenaVacia() {
+        SolicitudListaReproduccion solicitudInvalida = SolicitudListaReproduccion.builder()
+                .nombre("")
+                .descripcion("Desc")
+                .build();
+
+        assertThatThrownBy(() -> listaReproduccionServicio.crearListaReproduccion(solicitudInvalida))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("no puede ser null");
+    }
+
+    @Test
+    @DisplayName("Debe lanzar IllegalArgumentException cuando el nombre es solo espacios en blanco")
+    void debeLanzarExcepcionCuandoNombreEsSoloEspacios() {
         SolicitudListaReproduccion solicitudInvalida = SolicitudListaReproduccion.builder()
                 .nombre("   ")
                 .descripcion("Desc")
                 .build();
 
         assertThatThrownBy(() -> listaReproduccionServicio.crearListaReproduccion(solicitudInvalida))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("no puede ser null");
     }
 
     @Test
@@ -158,6 +302,18 @@ class ListaReproduccionServicioTest {
                 .isInstanceOf(ListaReproduccionYaExisteExcepcion.class);
 
         verify(listaReproduccionRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Debe retornar lista vacía cuando no existen playlists registradas")
+    void debeRetornarListaVaciaCuandoNoHayPlaylists() {
+        when(listaReproduccionRepository.findAll()).thenReturn(List.of());
+        when(listaReproduccionMapper.aListaRespuestas(List.of())).thenReturn(List.of());
+
+        List<RespuestaListaReproduccion> resultados = listaReproduccionServicio.obtenerTodasListasReproduccion();
+
+        assertThat(resultados).isEmpty();
+        verify(listaReproduccionRepository).findAll();
     }
 
     @Test

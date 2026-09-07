@@ -53,7 +53,7 @@ public class ConfiguracionSeguridad {
                         .requestMatchers(HttpMethod.DELETE, "/lists/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
-                .httpBasic(Customizer.withDefaults())
+                .httpBasic(basic -> basic.authenticationEntryPoint(puntoEntradaAutenticacionPersonalizado()))
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(puntoEntradaAutenticacionPersonalizado())
                         .accessDeniedHandler(manejadorAccesoDenegadoPersonalizado())

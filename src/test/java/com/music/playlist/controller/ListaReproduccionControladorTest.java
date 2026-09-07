@@ -121,6 +121,38 @@ class ListaReproduccionControladorTest {
 
     @Test
     @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @DisplayName("POST /lists con canción con título vacío debe retornar 400 Bad Request")
+    void crearListaReproduccion_cuandoCancionTieneTituloVacio_debeRetornar400BadRequest() throws Exception {
+        SolicitudCancion cancionInvalida = new SolicitudCancion("", "Queen", "A Night at the Opera", "1975", "Rock");
+        SolicitudListaReproduccion solicitud = new SolicitudListaReproduccion("Rock Classics", "Descripción", List.of(cancionInvalida));
+
+        mockMvc.perform(post("/lists")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(solicitud)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status", is(400)))
+                .andExpect(jsonPath("$.message", containsString("Error de validación")));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @DisplayName("POST /lists con canción con artista vacío debe retornar 400 Bad Request")
+    void crearListaReproduccion_cuandoCancionTieneArtistaVacio_debeRetornar400BadRequest() throws Exception {
+        SolicitudCancion cancionInvalida = new SolicitudCancion("Bohemian Rhapsody", "  ", "A Night at the Opera", "1975", "Rock");
+        SolicitudListaReproduccion solicitud = new SolicitudListaReproduccion("Rock Classics", "Descripción", List.of(cancionInvalida));
+
+        mockMvc.perform(post("/lists")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(solicitud)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status", is(400)))
+                .andExpect(jsonPath("$.message", containsString("Error de validación")));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
     @DisplayName("POST /lists con nombre duplicado debe retornar 409 Conflict")
     void crearListaReproduccion_cuandoNombreDuplicado_debeRetornar409Conflict() throws Exception {
         SolicitudListaReproduccion solicitud = new SolicitudListaReproduccion("Rock Classics", "Descripción", List.of());
@@ -149,6 +181,17 @@ class ListaReproduccionControladorTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].nombre", is("Rock Classics")));
+    }
+
+    @Test
+    @WithMockUser(username = "user", roles = {"USER"})
+    @DisplayName("GET /lists cuando no hay listas debe retornar 200 OK con arreglo vacío")
+    void obtenerTodasListasReproduccion_cuandoNoHayListas_debeRetornar200OKConListaVacia() throws Exception {
+        when(listaReproduccionServicio.obtenerTodasListasReproduccion()).thenReturn(List.of());
+
+        mockMvc.perform(get("/lists"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
     }
 
     @Test

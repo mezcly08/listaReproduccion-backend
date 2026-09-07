@@ -101,6 +101,59 @@ class SeguridadIntegracionTest {
     }
 
     @Test
+    @DisplayName("Petición POST sin autenticación debe retornar 401 Unauthorized")
+    void peticionPostSinAutenticacion_debeRetornar401Unauthorized() throws Exception {
+        SolicitudListaReproduccion solicitud = new SolicitudListaReproduccion("Jazz", "Smooth Jazz", List.of());
+
+        mockMvc.perform(post("/lists")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(solicitud)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status", is(401)))
+                .andExpect(jsonPath("$.message", org.hamcrest.Matchers.containsString("No autenticado")));
+    }
+
+    @Test
+    @DisplayName("Petición DELETE sin autenticación debe retornar 401 Unauthorized")
+    void peticionDeleteSinAutenticacion_debeRetornar401Unauthorized() throws Exception {
+        mockMvc.perform(delete("/lists/Jazz").with(csrf()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status", is(401)));
+    }
+
+    @Test
+    @DisplayName("Petición con credenciales erróneas en Basic Auth debe retornar 401 Unauthorized")
+    void peticionConCredencialesErroneas_debeRetornar401Unauthorized() throws Exception {
+        mockMvc.perform(get("/lists")
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic("user", "clave_incorrecta")))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status", is(401)));
+    }
+
+    @Test
+    @WithMockUser(username = "user", roles = {"USER"})
+    @DisplayName("Usuario con rol USER haciendo GET /lists/{listName} está PERMITIDO (200 OK)")
+    void rolUser_haciendoGetPorNombre_debeEstarPermitido() throws Exception {
+        RespuestaListaReproduccion respuesta = new RespuestaListaReproduccion("Jazz", "Smooth Jazz", List.of());
+        when(listaReproduccionServicio.obtenerListaReproduccionPorNombre("Jazz")).thenReturn(respuesta);
+
+        mockMvc.perform(get("/lists/Jazz"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombre", is("Jazz")));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @DisplayName("Usuario con rol ADMIN haciendo GET /lists está PERMITIDO (200 OK)")
+    void rolAdmin_haciendoGet_debeEstarPermitido() throws Exception {
+        when(listaReproduccionServicio.obtenerTodasListasReproduccion()).thenReturn(List.of());
+
+        mockMvc.perform(get("/lists"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     @WithMockUser(username = "admin", roles = {"ADMIN"})
     @DisplayName("Usuario con rol ADMIN haciendo DELETE /lists/{listName} está PERMITIDO (204 No Content)")
     void rolAdmin_haciendoDelete_debeEstarPermitido() throws Exception {
