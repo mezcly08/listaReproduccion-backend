@@ -153,6 +153,112 @@ class ListaReproduccionControladorTest {
 
     @Test
     @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @DisplayName("POST /lists con nombre de más de 100 caracteres debe retornar 400 Bad Request")
+    void crearListaReproduccion_cuandoNombreExcede100Caracteres_debeRetornar400BadRequest() throws Exception {
+        String nombreLargo = "A".repeat(101);
+        SolicitudListaReproduccion solicitud = new SolicitudListaReproduccion(nombreLargo, "Descripción", List.of());
+
+        mockMvc.perform(post("/lists")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(solicitud)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status", is(400)))
+                .andExpect(jsonPath("$.message", containsString("Error de validación")))
+                .andExpect(jsonPath("$.details[0]", containsString("no puede exceder los 100 caracteres")));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @DisplayName("POST /lists con nombre exactamente en el límite de 100 caracteres debe ser ACEPTADO (201 Created)")
+    void crearListaReproduccion_cuandoNombreTieneExactamente100Caracteres_debeRetornar201Created() throws Exception {
+        String nombre100 = "A".repeat(100);
+        SolicitudListaReproduccion solicitud = new SolicitudListaReproduccion(nombre100, "Descripción", List.of());
+        RespuestaListaReproduccion respuesta = new RespuestaListaReproduccion(nombre100, "Descripción", List.of());
+
+        when(listaReproduccionServicio.crearListaReproduccion(any(SolicitudListaReproduccion.class))).thenReturn(respuesta);
+
+        mockMvc.perform(post("/lists")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(solicitud)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.nombre", is(nombre100)));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @DisplayName("POST /lists con descripción de más de 500 caracteres debe retornar 400 Bad Request")
+    void crearListaReproduccion_cuandoDescripcionExcede500Caracteres_debeRetornar400BadRequest() throws Exception {
+        String descripcionLarga = "D".repeat(501);
+        SolicitudListaReproduccion solicitud = new SolicitudListaReproduccion("Rock Classics", descripcionLarga, List.of());
+
+        mockMvc.perform(post("/lists")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(solicitud)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status", is(400)))
+                .andExpect(jsonPath("$.message", containsString("Error de validación")))
+                .andExpect(jsonPath("$.details[0]", containsString("no puede exceder los 500 caracteres")));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @DisplayName("POST /lists con canción con título de más de 150 caracteres debe retornar 400 Bad Request")
+    void crearListaReproduccion_cuandoTituloCancionExcede150Caracteres_debeRetornar400BadRequest() throws Exception {
+        String tituloLargo = "T".repeat(151);
+        SolicitudCancion cancionInvalida = new SolicitudCancion(tituloLargo, "Queen", "Album", "1975", "Rock");
+        SolicitudListaReproduccion solicitud = new SolicitudListaReproduccion("Rock Classics", "Descripción", List.of(cancionInvalida));
+
+        mockMvc.perform(post("/lists")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(solicitud)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status", is(400)))
+                .andExpect(jsonPath("$.message", containsString("Error de validación")))
+                .andExpect(jsonPath("$.details[0]", containsString("no puede exceder los 150 caracteres")));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @DisplayName("POST /lists con canción con artista de más de 150 caracteres debe retornar 400 Bad Request")
+    void crearListaReproduccion_cuandoArtistaCancionExcede150Caracteres_debeRetornar400BadRequest() throws Exception {
+        String artistaLargo = "A".repeat(151);
+        SolicitudCancion cancionInvalida = new SolicitudCancion("Bohemian Rhapsody", artistaLargo, "Album", "1975", "Rock");
+        SolicitudListaReproduccion solicitud = new SolicitudListaReproduccion("Rock Classics", "Descripción", List.of(cancionInvalida));
+
+        mockMvc.perform(post("/lists")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(solicitud)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status", is(400)))
+                .andExpect(jsonPath("$.message", containsString("Error de validación")))
+                .andExpect(jsonPath("$.details[0]", containsString("no puede exceder los 150 caracteres")));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @DisplayName("POST /lists con canción con año de más de 10 caracteres debe retornar 400 Bad Request")
+    void crearListaReproduccion_cuandoAnnoCancionExcede10Caracteres_debeRetornar400BadRequest() throws Exception {
+        String annoLargo = "12345678901"; // 11 caracteres
+        SolicitudCancion cancionInvalida = new SolicitudCancion("Bohemian Rhapsody", "Queen", "Album", annoLargo, "Rock");
+        SolicitudListaReproduccion solicitud = new SolicitudListaReproduccion("Rock Classics", "Descripción", List.of(cancionInvalida));
+
+        mockMvc.perform(post("/lists")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(solicitud)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status", is(400)))
+                .andExpect(jsonPath("$.message", containsString("Error de validación")))
+                .andExpect(jsonPath("$.details[0]", containsString("no puede exceder los 10 caracteres")));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
     @DisplayName("POST /lists con nombre duplicado debe retornar 409 Conflict")
     void crearListaReproduccion_cuandoNombreDuplicado_debeRetornar409Conflict() throws Exception {
         SolicitudListaReproduccion solicitud = new SolicitudListaReproduccion("Rock Classics", "Descripción", List.of());

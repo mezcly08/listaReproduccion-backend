@@ -10,7 +10,7 @@
 [![Coverage](https://img.shields.io/badge/Coverage-93.2%25%20Lines%20%7C%2090.6%25%20Branches-brightgreen.svg)](target/site/jacoco/index.html)
 
 API REST empresarial para la gestión y administración de listas de reproducción de música desarrollada bajo el patrón de **Arquitectura en Capas** (`Controller` -> `Service` -> `Repository`), utilizando **Java 21**, **Spring Boot 3.3.3**, **Spring Data JPA**, **Spring Security**, **Lombok** y **MapStruct**.
-
+> **Autoría IA : 60%**
 ---
 
 ## 1. Arquitectura por Capas
